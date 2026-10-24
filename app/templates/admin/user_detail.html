@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ user.username }} - Admin{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:1.5rem;">&#x1F464; {{ user.username }}</h1>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">User Info</div>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Admin:</strong> {{ "Yes" if user.is_admin else "No" }}</p>
+        <p><strong>Joined:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') if user.created_at else '-' }}</p>
+        <p><strong>Last Login:</strong> {{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never' }}</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Per-Game Stats</div>
+        {% if game_stats %}
+        <table>
+            <thead><tr><th>Game</th><th>Sessions</th><th>Avg Score</th><th>Avg RT</th></tr></thead>
+            <tbody>
+            {% for stat in game_stats %}
+            <tr>
+                <td>{{ stat.name }}</td>
+                <td>{{ stat.sessions }}</td>
+                <td>{{ "%.1f"|format(stat.avg_score or 0) }}</td>
+                <td>{{ "%.0f"|format(stat.avg_rt or 0) }}ms</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color:var(--text-muted);">No game data.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Session History</div>
+    {% if sessions %}
+    <div class="chart-container">
+        <canvas id="userChart" height="200"></canvas>
+    </div>
+    <table>
+        <thead><tr><th>#</th><th>Game</th><th>Score</th><th>Accuracy</th><th>Avg RT</th><th>Difficulty</th><th>Algorithm</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for s in sessions %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ s.game.name if s.game else "?" }}</td>
+            <td>{{ "%.1f"|format(s.score or 0) }}</td>
+            <td>{{ "%.0f"|format(s.accuracy * 100) }}%</td>
+            <td>{{ "%.0f"|format(s.avg_reaction_time_ms or 0) }}ms</td>
+            <td>{{ s.initial_difficulty }} &rarr; {{ s.final_difficulty or '-' }}</td>
+            <td><span class="badge-algo">{{ s.dda_algorithm_used or '-' }}</span></td>
+            <td>{{ s.started_at.strftime('%Y-%m-%d %H:%M') if s.started_at else '-' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+        <p style="color:var(--text-muted);">No sessions.</p>
+    {% endif %}
+</div>
+
+<a href="{{ url_for('admin.users') }}" class="btn btn-secondary">&larr; Back to Users</a>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if sessions %}
+<script>
+const ctx = document.getElementById('userChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [{% for s in sessions|reverse %}"{{ s.started_at.strftime('%m/%d') if s.started_at else '' }}"{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Score',
+            data: [{% for s in sessions|reverse %}{{ s.score or 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: '#6c5ce7',
+            tension: 0.3,
+            fill: false,
+        }, {
+            label: 'Difficulty',
+            data: [{% for s in sessions|reverse %}{{ s.final_difficulty or s.initial_difficulty }}{% if not loop.last %},{% endif %}{% endfor %}],
+            borderColor: '#00cec9',
+            tension: 0.3,
+            fill: false,
+        }]
+    },
+    options: { responsive: true }
+});
+</script>
+{% endif %}
+{% endblock %}

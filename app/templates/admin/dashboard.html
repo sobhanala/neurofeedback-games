@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}{% if current_user.is_admin %}Admin{% else %}Experimenter{% endif %} Dashboard - NeuroFeedback{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:1.5rem;">
+    {% if current_user.is_admin %}
+        &#x1F6E0; Admin Dashboard
+    {% else %}
+        &#x1F52C; Experimenter Dashboard{% if current_user.experimenter_code %} ({{ current_user.experimenter_code }}){% endif %}
+    {% endif %}
+</h1>
+
+<div class="grid grid-4">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_users }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ total_sessions }}</div>
+        <div class="stat-label">Total Sessions</div>
+    </div>
+    <div class="stat-card secondary">
+        <div class="stat-value">{{ total_games }}</div>
+        <div class="stat-label">Total Games</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-value">{{ active_games }}</div>
+        <div class="stat-label">Active Games</div>
+    </div>
+</div>
+
+<div class="grid grid-4" style="margin-top: 1rem;">
+    <div class="stat-card">
+        <div class="stat-value">{{ dashboard_stats.total_trials }}</div>
+        <div class="stat-label">Total Trials</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ dashboard_stats.accuracy_pct }}%</div>
+        <div class="stat-label">Overall Accuracy</div>
+    </div>
+    <div class="stat-card secondary">
+        <div class="stat-value">{{ dashboard_stats.avg_score }}</div>
+        <div class="stat-label">Avg Score</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-value">{{ dashboard_stats.avg_rt }}ms</div>
+        <div class="stat-label">Avg Reaction Time</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">Quick Links</div>
+        <p><a href="{{ url_for('admin.users') }}" class="btn btn-primary btn-sm" style="margin:0.3rem;">Manage Users</a></p>
+        {% if current_user.is_admin %}
+            <p><a href="{{ url_for('admin.experimenters') }}" class="btn btn-primary btn-sm" style="margin:0.3rem;">Manage Experimenters</a></p>
+        {% endif %}
+        <p><a href="{{ url_for('admin.games') }}" class="btn btn-primary btn-sm" style="margin:0.3rem;">Manage Games</a></p>
+        <p><a href="{{ url_for('admin.create_game') }}" class="btn btn-success btn-sm" style="margin:0.3rem;">Create New Game</a></p>
+        <p><a href="{{ url_for('admin.analytics') }}" class="btn btn-secondary btn-sm" style="margin:0.3rem;">Analytics</a></p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Per-Game Statistics</div>
+        {% if game_stats %}
+        <table>
+            <thead><tr><th>Game</th><th>Sessions</th><th>Users</th><th>Avg Score</th></tr></thead>
+            <tbody>
+            {% for stat in game_stats %}
+            <tr>
+                <td>{{ stat.name }}</td>
+                <td>{{ stat.total_sessions }}</td>
+                <td>{{ stat.unique_users }}</td>
+                <td>{{ "%.1f"|format(stat.avg_score or 0) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color:var(--text-muted);">No data yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Recent Sessions</div>
+    {% if recent_sessions %}
+    <div class="table-container">
+    <table>
+        <thead><tr><th>User</th><th>Game</th><th>Score</th><th>Accuracy</th><th>Avg RT</th><th>Algorithm</th><th>Date</th></tr></thead>
+        <tbody>
+        {% for s in recent_sessions %}
+        <tr>
+            <td><a href="{{ url_for('admin.user_detail', user_id=s.user_id) }}">{{ s.user.username if s.user else s.user_id }}</a></td>
+            <td>{{ s.game.name if s.game else "?" }}</td>
+            <td>{{ "%.1f"|format(s.score or 0) }}</td>
+            <td>{{ "%.0f"|format(s.accuracy * 100) }}%</td>
+            <td>{{ "%.0f"|format(s.avg_reaction_time_ms or 0) }}ms</td>
+            <td><span class="badge-algo">{{ s.dda_algorithm_used or '-' }}</span></td>
+            <td>{{ s.started_at.strftime('%Y-%m-%d %H:%M') if s.started_at else '-' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+        <p style="color:var(--text-muted);">No sessions yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - NeuroFeedback{% endblock %}
+{% block content %}
+<h1 style="margin-bottom:1.5rem;">Welcome, {{ current_user.username }}! &#x1F44B;</h1>
+
+<div class="grid grid-4">
+    <div class="stat-card">
+        <div class="stat-value">{{ total_sessions }}</div>
+        <div class="stat-label">Total Sessions</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ "%.1f"|format(stats.avg_score or 0) }}</div>
+        <div class="stat-label">Avg Score</div>
+    </div>
+    <div class="stat-card secondary">
+        <div class="stat-value">{{ "%.0f"|format(stats.avg_rt or 0) }}ms</div>
+        <div class="stat-label">Avg Reaction Time</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-value">{% if stats.total_trials %}{{ "%.0f"|format((stats.total_correct or 0) / (stats.total_trials or 1) * 100) }}%{% else %}0%{% endif %}</div>
+        <div class="stat-label">Accuracy</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">&#x1F3AE; Available Games</div>
+        {% if games %}
+            <div class="grid grid-2">
+            {% for game in games %}
+                <a href="{{ url_for('games.play_game', slug=game.slug) }}" class="game-card" style="text-decoration:none;">
+                    <div class="game-icon">
+                        {% if game.game_type == 'reaction' %}&#x26A1;
+                        {% elif game.game_type == 'memory' %}&#x1F9E9;
+                        {% elif game.game_type == 'stroop' %}&#x1F308;
+                        {% elif game.game_type == 'nback' %}&#x1F520;
+                        {% else %}&#x1F3AE;{% endif %}
+                    </div>
+                    <h3>{{ game.name }}</h3>
+                    <span class="badge-algo">{{ game.dda_algorithm }}</span>
+                </a>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p style="color:var(--text-muted);">No games available yet. Ask an admin to create some!</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">&#x1F4CB; Recent Sessions</div>
+        {% if recent_sessions %}
+        <table>
+            <thead><tr><th>Game</th><th>Score</th><th>Accuracy</th><th>Date</th></tr></thead>
+            <tbody>
+            {% for s in recent_sessions %}
+            <tr>
+                <td>{{ s.game.name if s.game else "Unknown" }}</td>
+                <td>{{ "%.1f"|format(s.score or 0) }}</td>
+                <td>{{ "%.0f"|format(s.accuracy * 100) }}%</td>
+                <td>{{ s.started_at.strftime('%m/%d %H:%M') if s.started_at else '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+            <p style="color:var(--text-muted);">No sessions yet. Start playing!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
